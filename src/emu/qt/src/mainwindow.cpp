@@ -18,6 +18,8 @@
  */
 
 #include "./ui_mainwindow.h"
+#include "./links.h"
+
 #include <qt/aboutdialog.h>
 #include <qt/applistwidget.h>
 #include <qt/btnetplay_friends_dialog.h>
@@ -254,7 +256,7 @@ main_window::main_window(QApplication &application, QWidget *parent, eka2l1::des
 
     eka2l1::kernel_system *kernel = emulator_state_.symsys->get_kernel_system();
 
-    if (!emulator_state_.init_app_launched)
+    if (!emulator_state_.app_launch_from_command_line)
         setup_app_list();
 
     setup_package_installer_ui_hooks();
@@ -337,7 +339,7 @@ main_window::main_window(QApplication &application, QWidget *parent, eka2l1::des
 
     diag->check_for_update(false);
 
-    update_notice_dialog::spawn(this);
+    //update_notice_dialog::spawn(this);
 
     restore_ui_layouts();
     on_theme_change_requested(QString("%1").arg(settings.value(THEME_SETTING_NAME, 0).toInt()));
@@ -435,7 +437,7 @@ void main_window::setup_app_list(const bool load_now) {
 
         if (!no_notify_install.isValid() || !no_notify_install.toBool()) {
             const QMessageBox::StandardButton result = make_dialog_with_checkbox_and_choices(
-                tr("No device installed"), tr("You have not installed any device. Please install a device or follow the installation instructions on EKA2L1's GitHub wiki page."),
+                tr("No device installed"), tr("You have not installed any device. Please visit <a href=\"" WIKI_LINK "\">EKA2L1 wiki</a> to get started or install a device."),
                 tr("Don't show this again"), false, [](bool on) {
                     QSettings settings;
                     settings.setValue(NO_DEVICE_INSTALL_DISABLE_NOF_SETTING, on);
@@ -678,6 +680,10 @@ void main_window::on_new_device_added() {
 
         emulator_state_.symsys->startup();
         emulator_state_.symsys->set_device(0);
+
+        emulator_state_.symsys->mount(drive_c, drive_media::physical, eka2l1::add_path(emulator_state_.conf.storage, "/drives/c/"), io_attrib_internal);
+        emulator_state_.symsys->mount(drive_d, drive_media::physical, eka2l1::add_path(emulator_state_.conf.storage, "/drives/d/"), io_attrib_internal);
+        emulator_state_.symsys->mount(drive_e, drive_media::physical, eka2l1::add_path(emulator_state_.conf.storage, "/drives/e/"), io_attrib_removeable);
 
         // Set and wait for reinitialization
         emulator_state_.init_event.set();
@@ -1080,7 +1086,11 @@ void main_window::on_app_exited(eka2l1::kernel::process *target_proc) {
         }
     }
 
-    on_restart_requested();
+    if (emulator_state_.app_launch_from_command_line) {
+        close();
+    } else {
+        on_restart_requested();
+    }
 }
 
 std::function<void(eka2l1::kernel::process *)> main_window::get_process_exit_callback() {

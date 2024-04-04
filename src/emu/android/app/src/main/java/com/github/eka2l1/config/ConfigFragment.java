@@ -443,7 +443,7 @@ public class ConfigFragment extends Fragment implements View.OnClickListener {
             etSystemTimeDelay.setText(dataStore.getString("time-delay", "0"));
             cbShouldChildInherit.setChecked(dataStore.getBoolean("should-child-inherit-setting", true));
 
-            cbUseShaderForUpscale.setChecked(dataStore.getString("screen-upscale-method", "0") != "0");
+            cbUseShaderForUpscale.setChecked(!dataStore.getString("screen-upscale-method", "0").equals("0"));
             if (!cbUseShaderForUpscale.isChecked()) {
                 tvUpscaleShader.setVisibility(View.GONE);
                 spUpscaleShader.setVisibility(View.GONE);
@@ -463,6 +463,9 @@ public class ConfigFragment extends Fragment implements View.OnClickListener {
                     }
                 }
             }
+        } else {
+            tvUpscaleShader.setVisibility(View.GONE);
+            spUpscaleShader.setVisibility(View.GONE);
         }
 
         etScreenBack.setText(String.format("%06X", params.screenBackgroundColor));

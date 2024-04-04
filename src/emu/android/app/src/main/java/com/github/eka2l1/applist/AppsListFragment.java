@@ -33,6 +33,7 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import android.net.Uri;
 import android.os.Bundle;
+import android.provider.DocumentsContract;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -66,18 +67,23 @@ import com.github.eka2l1.config.ProfilesFragment;
 import com.github.eka2l1.emu.Emulator;
 import com.github.eka2l1.emu.EmulatorActivity;
 import com.github.eka2l1.info.AboutDialogFragment;
-import com.github.eka2l1.qrscan.QrScanResultContract;
 import com.github.eka2l1.settings.AppDataStore;
 import com.github.eka2l1.settings.SettingsFragment;
 import com.github.eka2l1.util.FileUtils;
 import com.github.eka2l1.util.LogUtils;
 import com.github.eka2l1.util.ZipUtils;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
@@ -105,6 +111,7 @@ public class AppsListFragment extends Fragment {
     private TextView tvEmptyList;
     private DividerItemDecoration dividerItemDecoration;
     private boolean restartNeeded;
+    private AppItem pendingAppItem;
     private final ActivityResultLauncher<String[]> openSisLauncher = registerForActivityResult(
             FileUtils.getFilePicker(),
             this::onSisResult);
@@ -115,20 +122,13 @@ public class AppsListFragment extends Fragment {
             FileUtils.getDirPicker(),
             this::onNGageGameResult
     );
-
-    private final ActivityResultLauncher<Integer> scanNG2LicenseLauncher = registerForActivityResult(
-            new QrScanResultContract(),
-            this::onNG2LicenseScanResult
-    );
-
-    private final ActivityResultLauncher<Integer> scanMMCIDLauncher = registerForActivityResult(
-            new QrScanResultContract(),
-            this::onMMCIDScanResult
-    );
-
     private final ActivityResultLauncher<String[]> openPreconfiguredPackZIPLauncher = registerForActivityResult(
             FileUtils.getFilePicker(),
             this::onPreconfiguredPackZIPResult);
+    private final ActivityResultLauncher pickLaunchFileDirectory = registerForActivityResult(
+            FileUtils.getDirPicker(true),
+            this::onLaunchFileDirPickResult);
+    private static final Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -397,51 +397,6 @@ public class AppsListFragment extends Fragment {
         }
     }
 
-    private void onNG2LicenseScanResult(String content) {
-        if (content == null) {
-            return;
-        }
-
-        if (!Emulator.installNG2Licenses(content)) {
-            Toast.makeText(getContext(), R.string.ng2_qr_code_invalid, Toast.LENGTH_LONG).show();
-        } else {
-            NG2LicenseInstallResultDialogFragment resultFragment = new NG2LicenseInstallResultDialogFragment();
-            resultFragment.show(getParentFragmentManager(), "ng2_license_result");
-        }
-    }
-
-    private void onMMCIDScanResult(String content) {
-        if (content == null) {
-            return;
-        }
-
-        String[] values = content.split("-");
-        boolean failed = false;
-
-        if (values.length != 4) {
-            failed = true;
-        } else {
-            for (int i = 0; i < values.length; i++) {
-                try {
-                    Long.parseLong(values[i], 16);
-                } catch (Exception ex) {
-                    failed = true;
-                    break;
-                }
-            }
-        }
-
-        Toast.makeText(getContext(), failed ? R.string.scan_qr_mmc_id_failed : R.string.scan_qr_mmc_id_success, failed ? Toast.LENGTH_LONG : Toast.LENGTH_SHORT).show();
-
-        if (!failed) {
-            AppDataStore store = AppDataStore.getEmulatorStore();
-            store.putString("mmc-id", content);
-            store.save();
-
-            restart();
-        }
-    }
-
     private void setToggleGridIconStatus(MenuItem item, boolean isGrid) {
         item.setChecked(isGrid);
         if (isGrid) {
@@ -627,10 +582,6 @@ public class AppsListFragment extends Fragment {
                     .commit();
         } else if (itemId == R.id.action_install_ng_game) {
             openNGageGameLauncher.launch(null);
-        } else if (itemId == R.id.action_install_ng2_licenses) {
-            scanNG2LicenseLauncher.launch(R.string.ng2_scan_qr_title);
-        } else if (itemId == R.id.action_scan_mmc_id) {
-            scanMMCIDLauncher.launch(R.string.scan_qr_mmc_id_title);
         } else if (itemId == R.id.action_install_preconfigured_pack) {
             openPreconfiguredZIPFilePicker();
         } else if (itemId == R.id.action_switch_devices) {
@@ -694,6 +645,61 @@ public class AppsListFragment extends Fragment {
         }
     }
 
+    private void saveAppLaunchFileToDirectory(String path, AppItem item) {
+        int currentDeviceId = Emulator.getCurrentDevice();
+        String []deviceCode = Emulator.getDeviceFirmwareCodes();
+
+        AppLaunchInfo launchInfo = new AppLaunchInfo(item.getUid(), item.getTitle(), deviceCode[currentDeviceId]);
+        String fileName = item.getTitle() + ".json";
+
+        Uri filePath = Uri.parse(path);
+        DocumentFile rootFile = DocumentFile.fromTreeUri(getContext(), filePath);
+        DocumentFile jsonFile = rootFile.findFile(fileName);
+
+        if (jsonFile == null) {
+            jsonFile = rootFile.createFile("application/json", fileName);
+        }
+
+        filePath = jsonFile.getUri();
+
+        try (OutputStream outputStream = getActivity().getContentResolver().openOutputStream(filePath, "wt")) {
+            OutputStreamWriter outputStreamWriter = new OutputStreamWriter(outputStream);
+            gson.toJson(launchInfo, outputStreamWriter);
+
+            outputStreamWriter.flush();
+            outputStreamWriter.close();
+
+            Toast.makeText(getContext(), String.format(getString(R.string.save_launch_file_success), fileName),
+                    Toast.LENGTH_LONG).show();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void onLaunchFileDirPickResult(String newPath) {
+        Uri persistableUri = Uri.parse(newPath);
+
+        getActivity().getContentResolver().takePersistableUriPermission(persistableUri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+
+        AppDataStore dataStore = AppDataStore.getAndroidStore();
+
+        dataStore.putString(PREF_LAUNCH_FILE_DIR, newPath);
+        dataStore.save();
+
+        saveAppLaunchFileToDirectory(newPath, pendingAppItem);
+    }
+
+    private void saveAppLaunchFile(AppItem item) {
+        String launchFileDir = AppDataStore.getAndroidStore().getString(PREF_LAUNCH_FILE_DIR, null);
+        if (launchFileDir == null) {
+            pendingAppItem = item;
+            pickLaunchFileDirectory.launch(null);
+        } else {
+            saveAppLaunchFileToDirectory(launchFileDir, item);
+        }
+    }
+
     @Override
     public boolean onContextItemSelected(@NonNull MenuItem item) {
         int index = AppItemViewHolder.contextIndex;
@@ -711,6 +717,8 @@ public class AppsListFragment extends Fragment {
                     .commit();
         } else if (item.getItemId() == R.id.action_context_shortcut) {
             addAppShortcut(appItem);
+        } else if (item.getItemId() == R.id.action_context_launch_file) {
+            saveAppLaunchFile(appItem);
         }
         return super.onContextItemSelected(item);
     }

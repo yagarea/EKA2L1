@@ -15,3 +15,5 @@ CMakeSettings.json
 .vscode
 out
 .metadata
+cmake-build-*
+.idea

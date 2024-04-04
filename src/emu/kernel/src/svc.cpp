@@ -52,6 +52,7 @@
 
 namespace eka2l1::epoc {
     static security_policy server_exclamation_point_name_policy({ cap_prot_serv });
+    static security_policy kill_process_policy({ cap_power_mgmt });
 
     static eka2l1::kernel::thread_local_data *current_local_data(kernel_system *kern) {
         return kern->crr_thread()->get_local_data();
@@ -563,6 +564,25 @@ namespace eka2l1::epoc {
         }
 
         return epoc::error_general;
+    }
+
+    BRIDGE_FUNC(void, process_kill, kernel::handle h, kernel::entity_exit_type etype, std::int32_t reason, epoc::desc16 *category) {
+        process_ptr pr = kern->get<kernel::process>(h);
+
+        if (!pr) {
+            return;
+        }
+
+        if (!kern->is_eka1() && pr != kern->crr_process()) {
+            if (!pr->satisfy(kill_process_policy)) {
+                LOG_ERROR(KERNEL, "Process kill failed, process {} doesn't have enough capability to kill process {}",
+                    kern->crr_process()->name(), pr->name());
+
+                return;
+            }
+        }
+
+        pr->kill(etype, category ? category->to_std_string(kern->crr_process()) : u"None", reason);
     }
 
     /********************/
@@ -5597,9 +5617,26 @@ namespace eka2l1::epoc {
         return chn->do_control(kern->crr_thread(), func, arg1, arg2);
     }
 
+    BRIDGE_FUNC(std::int32_t, logical_channel_do_request, const kernel::handle h, const int func,
+        eka2l1::ptr<epoc::request_status> status, const std::uint32_t *args) {
+        ldd::channel *chn = kern->get<ldd::channel>(h);
+
+        if (!chn) {
+            return epoc::error_not_found;
+        }
+
+        epoc::notify_info request_nof_info(status, kern->crr_thread());
+        return chn->do_request(request_nof_info, func, args[0], args[1], false);
+    }
+
     BRIDGE_FUNC(std::int32_t, logical_channel_do_control_eka1, const int func, eka2l1::ptr<void> arg1,
         eka2l1::ptr<void> arg2, const kernel::handle h) {
         return logical_channel_do_control(kern, h, func, arg1, arg2);
+    }
+
+    BRIDGE_FUNC(std::int32_t, logical_channel_do_request_eka1, const int func, eka2l1::ptr<epoc::request_status> status,
+        const std::uint32_t *args, const kernel::handle h) {
+        return logical_channel_do_request(kern, h, func, status, args);
     }
 
     BRIDGE_FUNC(void, restore_thread_exception_state) {
@@ -5892,6 +5929,7 @@ namespace eka2l1::epoc {
         BRIDGE_REGISTER(0x77, dll_free_tls),
         BRIDGE_REGISTER(0x78, thread_rename),
         BRIDGE_REGISTER(0x79, process_rename),
+        BRIDGE_REGISTER(0x7A, process_kill),
         BRIDGE_REGISTER(0x7B, process_logon),
         BRIDGE_REGISTER(0x7C, process_logon_cancel),
         BRIDGE_REGISTER(0x7D, thread_process),
@@ -5944,6 +5982,7 @@ namespace eka2l1::epoc {
         BRIDGE_REGISTER(0xD0, process_get_handle_parameter),
         BRIDGE_REGISTER(0xD1, process_get_data_parameter),
         BRIDGE_REGISTER(0xD2, process_data_parameter_length),
+        BRIDGE_REGISTER(0xD4, thread_stack_info),
         BRIDGE_REGISTER(0xDB, plat_sec_diagnostic),
         BRIDGE_REGISTER(0xDC, exception_descriptor),
         BRIDGE_REGISTER(0xDD, thread_request_signal),
@@ -6062,6 +6101,7 @@ namespace eka2l1::epoc {
         BRIDGE_REGISTER(0x76, dll_free_tls),
         BRIDGE_REGISTER(0x77, thread_rename),
         BRIDGE_REGISTER(0x78, process_rename),
+        BRIDGE_REGISTER(0x79, process_kill),
         BRIDGE_REGISTER(0x7A, process_logon),
         BRIDGE_REGISTER(0x7B, process_logon_cancel),
         BRIDGE_REGISTER(0x7C, thread_process),
@@ -6115,6 +6155,7 @@ namespace eka2l1::epoc {
         BRIDGE_REGISTER(0xCF, process_get_handle_parameter),
         BRIDGE_REGISTER(0xD0, process_get_data_parameter),
         BRIDGE_REGISTER(0xD1, process_data_parameter_length),
+        BRIDGE_REGISTER(0xD3, thread_stack_info),
         BRIDGE_REGISTER(0xDA, plat_sec_diagnostic),
         BRIDGE_REGISTER(0xDB, exception_descriptor),
         BRIDGE_REGISTER(0xDC, thread_request_signal),
@@ -6324,6 +6365,7 @@ namespace eka2l1::epoc {
         BRIDGE_REGISTER(0x8000E6, message_ipc_copy_eka1),
         BRIDGE_REGISTER(0x8000EA, message_queue_notify_space_available),
         BRIDGE_REGISTER(0x8000EB, message_queue_notify_data_available),
+        BRIDGE_REGISTER(0xC0000C, logical_channel_do_request_eka1),
         BRIDGE_REGISTER(0xC0000E, logical_channel_do_control_eka1),
         BRIDGE_REGISTER(0xC0001D, process_resume),
         BRIDGE_REGISTER(0xC00024, process_set_priority_eka1),
@@ -6438,6 +6480,7 @@ namespace eka2l1::epoc {
         BRIDGE_REGISTER(0x8000C2, get_inactivity_time),
         BRIDGE_REGISTER(0x8000CC, imb_range),
         BRIDGE_REGISTER(0x8000C9, clear_inactivity_time),
+        BRIDGE_REGISTER(0xC0000C, logical_channel_do_request_eka1),
         BRIDGE_REGISTER(0xC0000E, logical_channel_do_control_eka1),
         BRIDGE_REGISTER(0xC0001D, process_resume),
         BRIDGE_REGISTER(0xC00024, process_set_priority_eka1),

@@ -29,25 +29,9 @@
     <string name="notify_dialog_title">Notification</string>
     <string name="grid_app_list_mode">Grid mode</string>
     <string name="list_app_list_mode">List mode</string>
-    <string name="qr_scan_title">Scan your QR code</string>
-    <string name="camera_not_available">No camera available</string>
-    <string name="ng2_license_install_success_single_game">Successfully installed licenses of <b>%s</b>!</string>
-    <string name="ng2_license_install_failed_single_game">Fail to install licenses of <b>%s</b>!</string>
-    <string name="ng2_license_install_success_multiple_game">These games\' licenses have successfully be installed:</string>
-    <string name="ng2_license_install_failed_multiple_game">These games\' licenses have failed to be installed:</string>
-    <string name="ng2_license_install_result">License install result</string>
-    <string name="ng2_scan_qr_title">Scan N-Gage 2.0 QR code license</string>
-    <string name="install_ng2_licenses">Install N-Gage 2.0 licenses</string>
-    <string name="ng2_qr_code_invalid">The provided QR code contains invalid N-Gage 2.0 game license!</string>
-    <string name="scan_mmc_id">Scan MMC ID</string>
     <string name="mounted_mmc_ok_and_use_id_in_folder_name">Completed! Using MMC ID found in folder name.</string>
-    <string name="scan_qr_mmc_id_title">Scan QR code containing MMC ID</string>
-    <string name="scan_qr_mmc_id_failed">QR code does not contain MMC ID</string>
-    <string name="scan_qr_mmc_id_success">Successfully scan MMC ID</string>
     <string name="ng1_menu_title">N-Gage</string>
     <string name="ng2_menu_title">N-Gage 2.0</string>
-    <string name="qr_no_camera">Press the picture button on bottom-right to scan QR code from an existing image.\n\nPlease re-enable camera permission for this application in order for camera scanning to work.</string>
-    <string name="qr_not_found_in_image">Can\'t find QR code in the choosen image.</string>
     <string name="install_preconfigured_pack">Install preconfigured pack</string>
     <string name="delete_existing_data_title">Delete existing data</string>
     <string name="delete_existing_data">Do you want to delete existing emulator data (devices, apps, games,...)?</string>
@@ -57,6 +41,7 @@
     <string name="choose_installation_type_instruction">Use an existing data pack to quickly settle in, or start afresh by installing a new device using its ROM/firmware.</string>
     <string name="preconfigured_pack">Preconfigured pack</string>
     <string name="rom_or_firmware">ROM/Firmware</string>
+    <string name="save_launch_file_success">Launch file saved as %s!</string>
 
     <string name="install">Install</string>
     <string name="rescan_devices">Rescan devices</string>
@@ -103,6 +88,7 @@
     <string name="pref_wakelock">Keep screen on</string>
     <string name="pref_enable_vibration">Enable vibration</string>
     <string name="pref_emulator_dir">Working directory</string>
+    <string name="pref_launch_file_dir">Launch file directory</string>
     <string name="pref_emulator_dir_cant_change">The working directory can\'t be changed!</string>
     <string name="pref_general_utilities_nearest_neighbor_filtering_msg">Enable nearest neighbor filtering</string>
     <string name="pref_system_language_option_name">Language</string>
@@ -135,6 +121,7 @@
     <string name="action_context_delete">Delete</string>
     <string name="action_context_rename">Rename</string>
     <string name="action_context_shortcut">Create shortcut</string>
+    <string name="action_context_launch_file">Create launch file</string>
 
     <string name="start">Start</string>
     <string name="reset_settings">Reset settings</string>
@@ -245,10 +232,10 @@
     <string name="log_saved">Log has been saved</string>
     <string name="enter_text">Enter the text</string>
 
-    <string name="about_website" translatable="false">&lt;BR>Website: &lt;a href="https://12l1.com">12l1.com&lt;/a></string>
+    <string name="about_website" translatable="false">&lt;BR>Website: &lt;a href="https://eka2l1.github.io">eka2l1.github.io&lt;/a></string>
     <string name="about_github" translatable="false">&lt;BR>GitHub: &lt;a href="https://github.com/EKA2L1/EKA2L1">github.com/EKA2L1/EKA2L1&lt;/a></string>
     <string name="about_crowdin" translatable="false">&lt;BR>Crowdin(translation): &lt;a href="https://crowdin.com/project/EKA2L1">crowdin.com/project/EKA2L1&lt;/a></string>
-    <string name="about_copyright" translatable="false">&lt;BR>&lt;BR>Copyright 2018-2023 EKA2L1 Team</string>
+    <string name="about_copyright" translatable="false">&lt;BR>&lt;BR>Copyright 2018-2024 EKA2L1 Team</string>
     <string name="about_icon_author" translatable="false">dmolina007 &amp; Frenesi</string>
     <string name="about_icon_by">&lt;BR>Icon by: </string>
     <string name="about_special_thanks_title">Special thanks</string>

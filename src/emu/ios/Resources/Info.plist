@@ -17,9 +17,9 @@
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-    <string>26.9.0</string>
+    <string>26.9.1</string>
     <key>CFBundleVersion</key>
-    <string>260940</string>
+    <string>260952</string>
     <key>CFBundleIcons</key>
     <dict>
         <key>CFBundlePrimaryIcon</key>
@@ -266,6 +266,10 @@
     <string>Symbian apps running in the emulator can use the camera for their viewfinder and photo capture features.</string>
     <key>NSMicrophoneUsageDescription</key>
     <string>Symbian apps running in the emulator can use the microphone for recording and voice features.</string>
+    <key>NSBonjourServices</key>
+    <array>
+        <string>_eka2l1._udp</string>
+    </array>
     <key>NSLocalNetworkUsageDescription</key>
     <string>Bluetooth Netplay emulates Symbian Bluetooth multiplayer over your local network to find and connect to other EKA2L1 players.</string>
 </dict>
